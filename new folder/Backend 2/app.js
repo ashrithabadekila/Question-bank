@@ -34,6 +34,14 @@ if(mimetype && extname){
 app.set('view engine', 'ejs'); 
 app.use(express.static('./public'));
  app.get('/', (req, res) =>res.render('index'));
+  app.get('/posts',function (req, res){
+ mongoose.model('posts').find(function(err, posts){
+
+  res.send(posts);
+ });
+
+ });
+  
 const port = 3000;
 app.post('/upload',(req,res)=>{
 upload(req,res,(err)=>{
@@ -114,6 +122,11 @@ mongoose.connection.on('open', function () {
    res.send('hello'+JSON.stringify(req.params.sem));
 
    })
+
+
+
+
+
   app.get('/',function (req, res){
      var asc=req.params.url;
      console.log(asc);
@@ -125,28 +138,37 @@ mongoose.connection.on('open', function () {
 
 var Schema = mongoose.Schema;
 
-
+//backend 2 code starts
 var TaskSchema = new Schema({
   id : { type:String}});
+// Code to fetch parameters from url
+ app.post('/semi',function (req, res){
+module.exports=function(bodyParser,model,path){
+    return function(req,res){
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader("Access-Control-Allow-Method","'GET, POST, OPTIONS, PUT, PATCH, DELETE'");
+      const user={
+            "year":req.body.year,
+            "subject":req.body.subject,
+            "branch":req.body.branch,
+            "sem":req.body.sem,
+            "college":req.body.college,
+                    };
+ console.log(req.body);
+}
+}})
+//downloading an image
   app.get('/download',function (req, res){
      console.log(req.file);
-   // var asd='/.public/uploads/MyImage-1516083779911.png';
 
- var asd='/.public/uploads//img1.jpg';
+ var asd='/.public/uploads/img1.jpg';
     res.download(__dirname+asd,'file.jpg');
       })
 
 module.exports = mongoose.model('Tasks', TaskSchema);
-   app.get('/posts',function (req, res){
- mongoose.model('posts').find(function(err, posts){
 
-  res.send(posts);
- });
-
- });
-
-  
   http.listen(3000, function () {
     console.log('Server started on port',+ port);
 
   })
+  //http://localhost:3000/semi  if we pass this in postman, it wont throw error, instead it loads then stops saying it cannot get response
