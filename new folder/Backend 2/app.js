@@ -1,174 +1,262 @@
-var express = require('express'),
-  app = express();
-var http = require('http').Server(app);
-const multer = require('multer');
-const ejs = require('ejs');
-const path = require('path');
-const fs = require('fs');
-const mongoose = require('mongoose');
-const storage = multer.diskStorage({
+'use strict'
+
+const express = require('express')
+const multer = require('multer')
+const fileType = require('file-type')
+const fs = require('fs')
+const app = express()
+var mongoose=require('mongoose');
+const router = express.Router()
+
+const port 	   = process.env.PORT || 8080;
+
+
+var f,b,c,d,e;
+
+// routes will go here
+/*  var user_id = req.param('id');
+  var token = req.param('token');
+  var geo = req.param('geo');  
+
+  res.send(user_id + ' ' + token + ' ' + geo);
+});*/
+
+
+/*const storage = multer.diskStorage({
 destination: '.public/uploads/',
 filename: function(req, file, cb){
   cb(null,file.fieldname + '-'+Date.now()+path.extname(file.originalname));
 }
-});
-
-const upload =multer({
-  storage: storage,
-  limits:{fileSize: 1000000},
-  fileFilter: function(req, file ,cb){
-   checkFileType(file, cb);
-  }
-}).single('MyImage');
-function checkFileType(file, cb){
-const filetypes = /jpeg|jpg|png|gif/;
-const extname= filetypes.test(path.extname(file.originalname).toLowerCase());
-const mimetype= filetypes.test(file.mimetype);
-if(mimetype && extname){
-  return cb(null,true);
-}else{
-  cb('Error: Image only!');
-}
-}
-
-app.set('view engine', 'ejs'); 
-app.use(express.static('./public'));
- app.get('/', (req, res) =>res.render('index'));
-  app.get('/posts',function (req, res){
- mongoose.model('posts').find(function(err, posts){
-
-  res.send(posts);
- });
-
- });
-  
-const port = 3000;
-app.post('/upload',(req,res)=>{
-upload(req,res,(err)=>{
-if(err){
-res.render('index',{
-msg: err
-}); 
-}else {
-  console.log(req.file);
-
-  if(req.file==undefined){
-    res.render('index',{
-      msg: 'File uploaded!',
-      file: 'uploads/${req.file.filename}'
-    });
-  }
-  var Schema = mongoose.Schema;
+});*/
+var Schema = mongoose.Schema;
 
 // connect to mongo
 mongoose.connect('localhost', 'testing_storeImg');
+var dbo = mongoose.connection;
+ 
+ var mongo = require('mongodb');
 
+var Server = mongo.Server,
+    Db = mongo.Db,
+    BSON = mongo.BSONPure;
 // example schema
 var schema = new Schema({
-  img:{data:Buffer,contentType:String},
     college: { data: String, contentType: String},
-   sem: { data: String, contentType: String},
-     branch: { data: String, contentType: String},
+    branch: { data: String, contentType: String},
+    sem: { data: String, contentType: String},
     subject: { data: String, contentType: String},
-   year: { data: String, contentType: String},
-    img_path: { data: String, contentType: String}
+    year: { data: String, contentType: String},
+    img_path: { data: String, contentType: String},
 });
- 
+var bodyParser = require('body-parser');
+app.use(bodyParser.json()); // support json encoded bodies
+app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
-// our model
-var A = mongoose.model('A', schema);
-// var a = new A;
- // a.img.data = fs.readFileSync(req.file.path);
-mongoose.connection.on('open', function () {
+// filename:function(req,file,callback){
+       // callback(null,req.body.college+req.body.sem+req.body.branch+req.body.subject+req.body.year+'.jpg');
+ //   }
+
+ /*var myDocument = db.as.findOne();
+
+if (myDocument) {
+   var myName = myDocument.name;
+
+   print (tojson(myName));
+}*/
+const upload = multer({
+    dest:'images/upload/', 
+
+    limits: {fileSize: 10000000, files: 1},
+    fileFilter:  (req, file, callback) => {
+    
+        if (!file.originalname.match(/\.(jpg|jpeg|JPG|pdf)$/)) {
+
+            return callback(new Error('Only Images are allowed !'), false)
+        }
+
+        callback(null, true);
+    }
+}).single('image')
+var pathh;
+
+router.post('/images/upload', (req, res) => {
+
+    upload(req, res, function (err) {
+
+        if (err) {
+
+            res.status(400).json({message: err.message})
+
+        } else {
+          
+           var sem=req.body.sem;
+            var branch=req.body.branch;
+            var year=req.body.year;
+            var subject=req.body.subject;
+            var college=req.body.college;
+            console.log(sem);
+            console.log(branch);
+            console.log(year);
+            console.log(subject);
+            console.log(college);
+            //"sem":sem ,"branch":branch,"year":year,"subject":subject,"college":college 
+           // "sem":"5" ,"college":"vcet","subject":"daa" ,"year":"2015"
+                       var query = {"year":req.body.year}
+
+            dbo.collection("as").find(query).toArray(function(err, result) {
+    if (err) throw err;
+    console.log(result);
+
+  });
+
+
+           // console.log(result.file.path);
+           
+          //  let path = `/images/${req.body.college+req.body.sem+req.body.branch+req.body.subject+req.body.year+'.jpg'}`
+          let path=req.file.path;
+            res.status(200).json({message: 'Image Uploaded Successfully !', path: path})
+        }
+    })
+    var A = mongoose.model('A', schema);
+ mongoose.connection.on('open', function () {
   console.error('mongo is open')
 
-    console.error('removed old docs');
+   // console.error('removed old docs');
 
     // store an img in binary in mongo
     var a = new A;
-  a.img.data = fs.readFileSync(req.file.path);
-   a.college.data= req.file.data;
+ a.college.data= req.body.college;
     a.college.contentType= 'String';
-    a.sem.data= req.file.college;
+    a.sem.data= req.body.sem;
     a.sem.contentType= 'String';
-    a.branch.data= req.file.branch;
+    a.branch.data= req.body.branch;
     a.branch.contentType= 'String';
-    a.subject.data= req.file.subject;
+    a.subject.data=req.body.subject;
     a.subject.contentType= 'String';
-    a.year.data= req.file.year;
+    a.year.data= req.body.year;
     a.year.contentType= 'String';
     a.img_path.data= req.file.path;
     a.img_path.contentType= 'url';
     a.save(function (err, a) {
       if (err) throw err;
-});      
+      else
+        console.log('path is succefully stored in database!!!!!!!!!!!!!');
+}); 
+   
 });
     
-    console.error('saved img to mongo');
-}
+    
+})
+
+router.get('/images/:imagename', (req, res) => {
+
+    let imagename = req.params.imagename
+    let imagepath = __dirname + "/images/" + imagename
+    let image = fs.readFileSync(imagepath)
+    let mime = fileType(image).mime
+
+	res.writeHead(200, {'Content-Type': mime })
+	res.end(image, 'binary')
+})
+
+
+
+app.use('/', router)
+
+/*app.use((err, req, res, next) => {
+
+    if (err.code == 'ENOENT') {
+        
+        res.status(404).json({message: 'Image Not Found !'})
+
+    } else {
+
+        res.status(500).json({message:err.message}) 
+    } 
+})*/
+app.post('/download', (req, res) => {
+
+           var sem=req.body.sem;
+            var branch=req.body.branch;
+            var year=req.body.year;
+            var subject=req.body.subject;
+            var college=req.body.college;
+            console.log(sem);
+            console.log(branch);
+            console.log(year);
+            console.log(subject);
+            console.log(college);
+            //"sem":sem ,"branch":branch,"year":year,"subject":subject,"college":college 
+           // "sem":"5" ,"college":"vcet","subject":"daa" ,"year":"2015"
+                       var query = {"year":req.body.year}
+
+            dbo.collection("as").find(query).toArray(function(err, result) {
+    if (err) throw err;
+    console.log(result);
+
+  });
+
+  
+ pathh=req.body.img_path;
+            //console.log(pathh);
+//var querry={"college":college,"sem":sem,"year":year,"branch":branch,"subject":subject};
+
+    });
+
+  /*  dbo.collection('as', function(err, collection) {
+         //       collection.find({year:year , subject:subject ,branch:branch ,college:college ,sem:sem}, {_id:false,img_path:true , sem:false,branch:false,subject:false,year:false,_v:false}).toArray(function(err, items) {
+
+        collection.find({}, {_id:false,img_path:false , college:true ,sem:false,branch:false,subject:false,year:false,_v:false}).toArray(function(err, items) {
+            console.log(items);
+            res.send(items);
+        });
+    });
+
+    });*/
+
+          /*  dbo.collection("as").find(querry,(err,path)=>{
+                res.send(path);
+            })*/
+//res.download(pathh,'file.jpg');
+  //  console.log(pathh);
+
+/*app.get('/search', (req,res) => {*/
+
+  /*  mongoose.connection.on('open', function () {
+  if (err) throw err;
+  var dbo = db.db("testing_storeImg");
+  var query = { college: "vcet" };
+  dbo.collection("as").find(query).toArray(function(err, result) {
+    if (err) throw err;
+    console.log(result);
+    db.close();
+  });
+});*/
+
+/*})
+*/
+var http = require('http');
+var url  = require('url');
+/*app.get('/:name', (req, res) => {
+http.createServer(function(req,res){
+    var url_parts = url.parse(req.url, true);
+    var query = url_parts.query;
+
+    console.log(query); //{Object}
+
+    res.end("End")
+})
+})*/
+app.get('/endpoint', function(request, response) {
+    var id = request.query.college;
+    response.end("I have received the ID: " + id);
 });
-});
 
- // app = express();
-//var http = require('http').Server(app);
-//var path = require('path');
+/*app.get('/:name', (req, res) => {
 
-//mongoose = require('mongoose');
-//mongoose.connect('mongodb://localhost/testing_storeImg'); 
-
- app.get('/sem',function (req, res){
-     var asc=req.params.url;
-     console.log("All query strings: " + JSON.stringify(req.query));
-   res.send('hello'+JSON.stringify(req.params.sem));
-
-   })
-
-
-
-
-
-  app.get('/',function (req, res){
-     var asc=req.params.url;
-     console.log(asc);
-    res.sendfile('index.html');
-  })
-  mongoose.model('files',{filepath: String});
-   mongoose.model('posts',{content: String});
-      mongoose.model('download',{content: String});
-
-var Schema = mongoose.Schema;
-
-//backend 2 code starts
-var TaskSchema = new Schema({
-  id : { type:String}});
-// Code to fetch parameters from url
- app.post('/semi',function (req, res){
-module.exports=function(bodyParser,model,path){
-    return function(req,res){
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader("Access-Control-Allow-Method","'GET, POST, OPTIONS, PUT, PATCH, DELETE'");
-      const user={
-            "year":req.body.year,
-            "subject":req.body.subject,
-            "branch":req.body.branch,
-            "sem":req.body.sem,
-            "college":req.body.college,
-                    };
- console.log(req.body);
-}
-}})
-//downloading an image
-  app.get('/download',function (req, res){
-     console.log(req.file);
-
- var asd='/.public/uploads/img1.jpg';
-    res.download(__dirname+asd,'file.jpg');
-      })
-
-module.exports = mongoose.model('Tasks', TaskSchema);
-
-  http.listen(3000, function () {
-    console.log('Server started on port',+ port);
-
-  })
-  //http://localhost:3000/semi  if we pass this in postman, it wont throw error, instead it loads then stops saying it cannot get response
+    var sPageURL = req.getParameter("name");
+console.log("hii")
+console.log(sPageURL);
+});*/
+app.listen(port)
+console.log(`App Runs on ${port}`)
