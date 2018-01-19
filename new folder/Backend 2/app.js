@@ -6,9 +6,10 @@ const fileType = require('file-type')
 const fs = require('fs')
 const app = express()
 var mongoose=require('mongoose');
+var reverse = require('reverse-string');
 const router = express.Router()
 
-const port 	   = process.env.PORT || 8080;
+const port     = process.env.PORT || 8080;
 
 
 var f,b,c,d,e;
@@ -41,12 +42,12 @@ var Server = mongo.Server,
     BSON = mongo.BSONPure;
 // example schema
 var schema = new Schema({
-    college: { data: String, contentType: String},
-    branch: { data: String, contentType: String},
-    sem: { data: String, contentType: String},
-    subject: { data: String, contentType: String},
-    year: { data: String, contentType: String},
-    img_path: { data: String, contentType: String},
+    college:  String,
+    branch:  String,
+    sem:  String,
+    subject: String,
+    year: String,
+    img_path:  String,
 });
 var bodyParser = require('body-parser');
 app.use(bodyParser.json()); // support json encoded bodies
@@ -69,7 +70,7 @@ const upload = multer({
     limits: {fileSize: 10000000, files: 1},
     fileFilter:  (req, file, callback) => {
     
-        if (!file.originalname.match(/\.(jpg|jpeg|JPG|pdf)$/)) {
+        if (!file.originalname.match(/\.(jpg|jpeg|JPG|pdf|png)$/)) {
 
             return callback(new Error('Only Images are allowed !'), false)
         }
@@ -89,7 +90,7 @@ router.post('/images/upload', (req, res) => {
 
         } else {
           
-           var sem=req.body.sem;
+          /* var sem=req.body.sem;
             var branch=req.body.branch;
             var year=req.body.year;
             var subject=req.body.subject;
@@ -99,16 +100,19 @@ router.post('/images/upload', (req, res) => {
             console.log(year);
             console.log(subject);
             console.log(college);
+*/
+             console.log(req.file);
+          
             //"sem":sem ,"branch":branch,"year":year,"subject":subject,"college":college 
            // "sem":"5" ,"college":"vcet","subject":"daa" ,"year":"2015"
-                       var query = {"year":req.body.year}
+                       var query = {"year":req.body.year , "sem":req.body.sem}
 
-            dbo.collection("as").find(query).toArray(function(err, result) {
+          /*  dbo.collection("as").find(query).toArray(function(err, result) {
     if (err) throw err;
     console.log(result);
 
   });
-
+*/
 
            // console.log(result.file.path);
            
@@ -125,18 +129,18 @@ router.post('/images/upload', (req, res) => {
 
     // store an img in binary in mongo
     var a = new A;
- a.college.data= req.body.college;
-    a.college.contentType= 'String';
-    a.sem.data= req.body.sem;
-    a.sem.contentType= 'String';
-    a.branch.data= req.body.branch;
-    a.branch.contentType= 'String';
-    a.subject.data=req.body.subject;
-    a.subject.contentType= 'String';
-    a.year.data= req.body.year;
-    a.year.contentType= 'String';
-    a.img_path.data= req.file.path;
-    a.img_path.contentType= 'url';
+ a.college= req.body.college;
+    //a.college.contentType= 'String';
+    a.sem= req.body.sem;
+   // a.sem.contentType= 'String';
+    a.branch= req.body.branch;
+    //a.branch.contentType= 'String';
+    a.subject=req.body.subject;
+    //a.subject.contentType= 'String';
+    a.year= req.body.year;
+    //a.year.contentType= 'String';
+    a.img_path= req.file.path;
+   // a.img_path.contentType= 'url';
     a.save(function (err, a) {
       if (err) throw err;
       else
@@ -155,8 +159,8 @@ router.get('/images/:imagename', (req, res) => {
     let image = fs.readFileSync(imagepath)
     let mime = fileType(image).mime
 
-	res.writeHead(200, {'Content-Type': mime })
-	res.end(image, 'binary')
+    res.writeHead(200, {'Content-Type': mime })
+    res.end(image, 'binary')
 })
 
 
@@ -174,7 +178,10 @@ app.use('/', router)
         res.status(500).json({message:err.message}) 
     } 
 })*/
+
+var pathhh;
 app.post('/download', (req, res) => {
+    
 
            var sem=req.body.sem;
             var branch=req.body.branch;
@@ -188,18 +195,38 @@ app.post('/download', (req, res) => {
             console.log(college);
             //"sem":sem ,"branch":branch,"year":year,"subject":subject,"college":college 
            // "sem":"5" ,"college":"vcet","subject":"daa" ,"year":"2015"
-                       var query = {"year":req.body.year}
+                       var query = {"sem":sem ,"branch":branch,"year":year,"subject":subject,"college":college }
 
-            dbo.collection("as").find(query).toArray(function(err, result) {
+            dbo.collection("as").find(query, {_id:false, college:false,sem:false,branch:false,subject:false,year:false,_v:false}).toArray(function(err, result) {
     if (err) throw err;
     console.log(result);
+for(var i=0;i<result.length;i++){
+  console.log(result[0].path);
+  pathhh=result[0].path;
+
+
+res.download(pathhh,'file.pdf');
+
+}
+    
+
+ //pt="images/upload/"+pathhj
+//console.log(pt);
+
+
 
   });
+   
 
-  
- pathh=req.body.img_path;
+
+
+ // console.log(req.file.img_path.data);
+// pathh=req.body.img_path;
             //console.log(pathh);
 //var querry={"college":college,"sem":sem,"year":year,"branch":branch,"subject":subject};
+
+  //console.log(pathhj);
+
 
     });
 
@@ -214,13 +241,13 @@ app.post('/download', (req, res) => {
 
     });*/
 
-          /*  dbo.collection("as").find(querry,(err,path)=>{
+          /*  dbo.collection("as").f:ind(querry,(err,path)=>{
                 res.send(path);
             })*/
-//res.download(pathh,'file.jpg');
-  //  console.log(pathh);
 
-/*app.get('/search', (req,res) => {*/
+
+
+app.get('/search', (req,res) => {
 
   /*  mongoose.connection.on('open', function () {
   if (err) throw err;
@@ -234,7 +261,9 @@ app.post('/download', (req, res) => {
 });*/
 
 /*})
+
 */
+});
 var http = require('http');
 var url  = require('url');
 /*app.get('/:name', (req, res) => {
